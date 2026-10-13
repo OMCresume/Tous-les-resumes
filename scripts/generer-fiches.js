@@ -2,7 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const BASE = "https://omcresume.github.io/one-more-chapter";
+const BASE = "https://omcresume.github.io/tous-les-resumes";
 const API = process.env.SUPABASE_URL;
 const KEY = process.env.SUPABASE_ANON_KEY;
 const ROOT = process.cwd();
@@ -95,12 +95,12 @@ function pageLivre(livre, personnages, url) {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${titre}${auteur ? " — " + auteur : ""} | One More Chapter</title>
-<meta name="description" content="${esc(description || "Découvrez ce livre sur One More Chapter.")}">
+<title>${titre}${auteur ? " — " + auteur : ""} | Tous les résumés</title>
+<meta name="description" content="${esc(description || "Découvrez ce livre sur Tous les résumés.")}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${url}">
 <meta property="og:type" content="book">
-<meta property="og:site_name" content="One More Chapter">
+<meta property="og:site_name" content="Tous les résumés">
 <meta property="og:title" content="${titre}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${url}">
@@ -144,11 +144,11 @@ footer a{color:#5d5146}
 </head>
 <body>
 <header>
-  <h1>One more chapter</h1>
+  <h1>Tous les résumés</h1>
   <p>Les livres, les personnages et les résumés.</p>
 </header>
 <main class="container">
-  <a class="back-button" href="${BASE}/">← Retour à One more chapter</a>
+  <a class="back-button" href="${BASE}/">← Retour </a>
   <article class="detail">
     <div class="detail-top">
       <div>${image}</div>
@@ -175,7 +175,7 @@ footer a{color:#5d5146}
   </article>
 </main>
 <footer>
-  <a href="${BASE}/">One More Chapter</a> · Les livres, les personnages et les résumés.
+  <a href="${BASE}/">Tous les résumés</a> · Les livres, les personnages et les résumés.
 </footer>
 </body>
 </html>`;
@@ -228,8 +228,8 @@ async function main() {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Les livres | One More Chapter</title>
-<meta name="description" content="Découvrez les livres et leurs résumés sur One More Chapter.">
+<title>Les livres | Tous les résumés</title>
+<meta name="description" content="Découvrez les livres et leurs résumés sur Tous les résumés.">
 <style>
 body{margin:0;background:#f7f3ed;color:#302c28;font-family:Georgia,serif}
 header{text-align:center;padding:40px 20px;background:#e8dfd2}
@@ -239,7 +239,7 @@ a{color:#5d5146}
 </style>
 </head>
 <body>
-<header><h1>One more chapter</h1><p>Les livres, les personnages et les résumés.</p></header>
+<header><h1>Tous les résumés</h1><p>Les livres, les personnages et les résumés.</p></header>
 <main><h2>Tous les livres</h2><ul>${liens.join("\n")}</ul>
 <p><a href="${BASE}/">Retour à l'accueil</a></p></main>
 </body>
