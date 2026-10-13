@@ -1,4 +1,4 @@
-
+voila tout mon code index, redonne moi le code modifier conformement a ce que je veux: 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -310,6 +310,7 @@
   <div id="detailContent"></div>
 
 </main>
+
 <script>
   // ================================================
   // CONNEXION SUPABASE
@@ -327,19 +328,18 @@
   );
 
   // ================================================
-  // CONFIGURATION DES URL
+  // VARIABLES
   // ================================================
 
-  const RACINE_SITE = "/tous-les-resumes/";
-  const RACINE_LIVRES = RACINE_SITE + "livres/";
-
   let livres = [];
+  let demandeDetail = 0;
 
   const libraryPage = document.getElementById("libraryPage");
   const detailPage = document.getElementById("detailPage");
+  const detailContent = document.getElementById("detailContent");
 
   // ================================================
-  // ÉCHAPPER LE HTML
+  // SÉCURISER L'AFFICHAGE DU TEXTE
   // ================================================
 
   function echapperHTML(valeur) {
@@ -353,71 +353,6 @@
   }
 
   // ================================================
-  // OBTENIR L'URL INDIVIDUELLE D'UN LIVRE
-  // Utilise les colonnes url ou slug de Supabase.
-  // ================================================
-
-  function obtenirUrlLivre(livre) {
-    const valeur = String(
-      livre.url || livre.slug || ""
-    ).trim();
-
-    if (!valeur) {
-      console.error(
-        "URL ou slug manquant dans Supabase pour le livre :",
-        livre.titre,
-        livre.id
-      );
-      return null;
-    }
-
-    // URL complète déjà enregistrée dans Supabase.
-    if (/^https?:\/\//i.test(valeur)) {
-      try {
-        const url = new URL(valeur);
-
-        // Ne pas envoyer les visiteurs vers un autre domaine.
-        if (url.origin !== window.location.origin) {
-          console.error("URL externe ignorée :", valeur);
-          return null;
-        }
-
-        return url.href;
-      } catch {
-        return null;
-      }
-    }
-
-    // Accepter uniquement des chemins internes.
-    if (valeur.startsWith("//")) {
-      return null;
-    }
-
-    let chemin = valeur.replace(/^\/+/, "");
-
-    // Si Supabase contient déjà livres/..., ne pas le doubler.
-    if (chemin.startsWith("tous-les-resumes/")) {
-      chemin = chemin.slice("tous-les-resumes/".length);
-    }
-
-    if (chemin.startsWith("livres/")) {
-      return RACINE_SITE + chemin;
-    }
-
-    // Un slug seul correspond à un dossier de livre.
-    if (
-      chemin.includes("..") ||
-      chemin.includes("?") ||
-      chemin.includes("#")
-    ) {
-      console.error("Slug invalide :", valeur);
-      return null;
-    }
-
-    return RACINE_LIVRES + chemin.replace(/\/+$/, "") + "/";
-  }
-
-  // ================================================
   // CHARGEMENT DES LIVRES
   // ================================================
 
@@ -428,7 +363,7 @@
       .order("date_parution", { ascending: false });
 
     if (error) {
-      console.error("Erreur Supabase :", error);
+      console.error(error);
 
       document.getElementById("books").innerHTML = `
         <div class="empty">
@@ -444,7 +379,7 @@
     remplirGenres();
     afficherLivres();
 
-    // Prendre en charge les anciens liens #livre-ID.
+    // Ouvre directement la fiche si l'adresse contient #livre-ID.
     naviguerDepuisAdresse();
   }
 
@@ -454,11 +389,14 @@
 
   function remplirGenres() {
     const select = document.getElementById("genre");
+
     const genreActuel = select.value;
 
     const genres = [
       ...new Set(
-        livres.map(livre => livre.genre).filter(Boolean)
+        livres
+          .map(livre => livre.genre)
+          .filter(Boolean)
       )
     ].sort();
 
@@ -479,13 +417,14 @@
 
   // ================================================
   // AFFICHAGE DE LA BIBLIOTHÈQUE
-  // Chaque livre est maintenant un vrai lien HTML.
   // ================================================
 
   function afficherLivres() {
     const recherche = document
       .getElementById("search")
-      .value.toLowerCase().trim();
+      .value
+      .toLowerCase()
+      .trim();
 
     const genre = document.getElementById("genre").value;
 
@@ -493,12 +432,15 @@
       const titre = String(livre.titre || "").toLowerCase();
       const auteur = String(livre.auteur || "").toLowerCase();
 
-      return (
-        (!recherche ||
-          titre.includes(recherche) ||
-          auteur.includes(recherche)) &&
-        (!genre || livre.genre === genre)
-      );
+      const correspondRecherche =
+        !recherche ||
+        titre.includes(recherche) ||
+        auteur.includes(recherche);
+
+      const correspondGenre =
+        !genre || livre.genre === genre;
+
+      return correspondRecherche && correspondGenre;
     });
 
     const container = document.getElementById("books");
@@ -515,30 +457,21 @@
     }
 
     livresFiltres.forEach(livre => {
-      const url = obtenirUrlLivre(livre);
-
-      // Ne pas générer un lien incorrect si l'URL manque.
-      if (!url) {
-        console.warn(
-          "Livre non cliquable : URL manquante ou invalide",
-          livre
-        );
-        return;
-      }
+      const article = document.createElement("article");
+      article.className = "book";
+      article.tabIndex = 0;
+      article.setAttribute("role", "link");
+      article.setAttribute(
+        "aria-label",
+        "Voir la fiche de " + String(livre.titre || "ce livre")
+      );
 
       const couverture = echapperHTML(
         livre.couverture ||
         "https://placehold.co/400x600?text=Pas+de+couverture"
       );
 
-      const lien = document.createElement("a");
-      lien.className = "book";
-      lien.href = url;
-      lien.style.display = "block";
-      lien.style.textDecoration = "none";
-      lien.style.color = "inherit";
-
-      lien.innerHTML = `
+      article.innerHTML = `
         <img
           class="cover"
           src="${couverture}"
@@ -561,57 +494,257 @@
         </div>
       `;
 
-      container.appendChild(lien);
+      article.addEventListener("click", () => {
+        ouvrirLienLivre(livre.id);
+      });
+
+      article.addEventListener("keydown", evenement => {
+        if (evenement.key === "Enter" || evenement.key === " ") {
+          evenement.preventDefault();
+          ouvrirLienLivre(livre.id);
+        }
+      });
+
+      container.appendChild(article);
     });
   }
 
   // ================================================
-  // ANCIENS LIENS : #livre-1, #livre-2, ETC.
-  // Redirection vers la page individuelle.
+  // LIENS DIRECTS DES LIVRES
+  // Exemple : #livre-12
   // ================================================
 
   function ouvrirLienLivre(id) {
     const idNumerique = Number(id);
 
-    if (
-      !Number.isSafeInteger(idNumerique) ||
-      idNumerique <= 0
-    ) {
+    if (!Number.isSafeInteger(idNumerique) || idNumerique <= 0) {
       return;
     }
 
-    const livre = livres.find(
-      element => String(element.id) === String(idNumerique)
-    );
+    const nouveauHash = "#livre-" + idNumerique;
 
-    if (!livre) {
-      console.error("Livre introuvable pour l'ID :", idNumerique);
-      return;
-    }
-
-    const url = obtenirUrlLivre(livre);
-
-    if (url) {
-      window.location.assign(url);
+    if (window.location.hash === nouveauHash) {
+      afficherDetail(idNumerique);
+    } else {
+      window.location.hash = nouveauHash;
     }
   }
 
   function naviguerDepuisAdresse() {
-    const correspondance =
-      window.location.hash.match(/^#livre-(\d+)$/);
+    const correspondance = window.location.hash.match(/^#livre-(\d+)$/);
 
-    if (!correspondance) {
-      return;
+    if (correspondance) {
+      const id = Number(correspondance[1]);
+
+      if (Number.isSafeInteger(id)) {
+        afficherDetail(id);
+        return;
+      }
     }
 
-    const id = Number(correspondance[1]);
-
-    if (Number.isSafeInteger(id)) {
-      ouvrirLienLivre(id);
-    }
+    afficherBibliotheque();
   }
 
   window.addEventListener("hashchange", naviguerDepuisAdresse);
+
+  // ================================================
+  // AFFICHER LE DÉTAIL D'UN LIVRE
+  // ================================================
+
+  async function afficherDetail(id) {
+    const livre = livres.find(
+      element => String(element.id) === String(id)
+    );
+
+    if (!livre) {
+      afficherBibliotheque();
+
+      detailContent.innerHTML = `
+        <div class="empty">
+          <h2>Livre introuvable</h2>
+          <p>Ce livre n'existe pas ou n'est plus disponible.</p>
+        </div>
+      `;
+      detailPage.classList.remove("hidden");
+      libraryPage.classList.add("hidden");
+      return;
+    }
+
+    const numeroDemande = ++demandeDetail;
+
+    libraryPage.classList.add("hidden");
+    detailPage.classList.remove("hidden");
+
+    detailContent.innerHTML = `
+      <div class="empty">Chargement de la fiche...</div>
+    `;
+
+    const { data: personnages, error } = await supabaseClient
+      .from("personnages")
+      .select("*")
+      .eq("livre_id", livre.id)
+      .order("id");
+
+    // Évite qu'une ancienne requête remplace une fiche plus récente.
+    if (numeroDemande !== demandeDetail) {
+      return;
+    }
+
+    if (error) {
+      console.error(error);
+
+      detailContent.innerHTML = `
+        <div class="empty">
+          <h2>Impossible de charger les personnages</h2>
+          <p>Réessaie dans quelques instants.</p>
+        </div>
+      `;
+      return;
+    }
+
+    const couverture = echapperHTML(
+      livre.couverture ||
+      "https://placehold.co/400x600?text=Pas+de+couverture"
+    );
+
+    const personnagesHTML =
+      personnages && personnages.length
+        ? personnages.map(personnage => `
+            <div class="character">
+              <h3>${echapperHTML(personnage.nom)}</h3>
+              <p>${echapperHTML(personnage.description || "")}</p>
+            </div>
+          `).join("")
+        : "<p>Aucun personnage renseigné pour le moment.</p>";
+
+    const urlFiche = window.location.href;
+
+    detailContent.innerHTML = `
+      <article class="detail">
+        <div class="detail-top">
+          <div>
+            <img
+              class="detail-cover"
+              src="${couverture}"
+              alt="Couverture de ${echapperHTML(livre.titre)}"
+            >
+          </div>
+
+          <div>
+            <h1>${echapperHTML(livre.titre)}</h1>
+
+            <div class="detail-author">
+              ${echapperHTML(livre.auteur)}
+            </div>
+
+            <div class="info">
+              ${
+                livre.genre
+                  ? `<strong>Genre :</strong> ${echapperHTML(livre.genre)}<br>`
+                  : ""
+              }
+
+              ${
+                livre.date_parution
+                  ? `<strong>Date :</strong> ${formaterDate(livre.date_parution)}`
+                  : ""
+              }
+            </div>
+          </div>
+        </div>
+
+        <button class="share-button" id="shareBookButton" type="button">
+          Copier le lien de cette fiche
+        </button>
+
+        <p class="share-status" id="shareStatus" aria-live="polite"></p>
+
+        ${
+          livre.resume
+            ? `
+              <section class="section">
+                <h2>Résumé</h2>
+                <div class="summary">${echapperHTML(livre.resume)}</div>
+              </section>
+            `
+            : ""
+        }
+
+        <section class="section">
+          <h2>Personnages</h2>
+          ${personnagesHTML}
+        </section>
+      </article>
+    `;
+
+    document
+      .getElementById("shareBookButton")
+      .addEventListener("click", async () => {
+        const statut = document.getElementById("shareStatus");
+
+        try {
+          await navigator.clipboard.writeText(window.location.href);
+          statut.textContent = "Lien copié ! Tu peux maintenant le partager.";
+        } catch (erreur) {
+          statut.textContent =
+            "Copie l'adresse affichée dans la barre de ton navigateur pour partager cette fiche.";
+        }
+      });
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+
+  // ================================================
+  // RETOUR À LA BIBLIOTHÈQUE
+  // ================================================
+
+  function afficherBibliotheque() {
+    demandeDetail++;
+
+    detailPage.classList.add("hidden");
+    libraryPage.classList.remove("hidden");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+
+  function retourBibliotheque() {
+    if (window.location.hash) {
+      // Supprime le fragment sans provoquer une navigation en double.
+      history.pushState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+
+    afficherBibliotheque();
+  }
+
+  window.addEventListener("popstate", naviguerDepuisAdresse);
+
+  // ================================================
+  // DATES
+  // ================================================
+
+  function formaterDate(date) {
+    const dateObj = new Date(date);
+
+    if (Number.isNaN(dateObj.getTime())) {
+      return echapperHTML(date);
+    }
+
+    return dateObj.toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric"
+    });
+  }
 
   // ================================================
   // RECHERCHE ET FILTRES
@@ -631,5 +764,6 @@
 
   chargerLivres();
 </script>
+
 </body>
 </html>
