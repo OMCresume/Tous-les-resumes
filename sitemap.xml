@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://omcresume.github.io/tous-les-resumes/</loc></url>
-  <url><loc>https://omcresume.github.io/tous-les-resumes/#livre-1/</loc></url>
-  <url><loc>https://omcresume.github.io/tous-les-resumes/#livre-2/</loc></url>
-  <url><loc>https://omcresume.github.io/tous-les-resumes/#livre-3/</loc></url>
-  <url><loc>https://omcresume.github.io/tous-les-resumes/#livre-4</loc></url>
+ <url><loc>https://omcresume.github.io/tous-les-resumes/</loc></url>
+  <url><loc>https://omcresume.github.io/tous-les-resumes/livres/cavalier-vert-1-1/</loc></url>
+  <url><loc>https://omcresume.github.io/tous-les-resumes/livres/cavalier-vert-2-2/</loc></url>
+  <url><loc>https://omcresume.github.io/tous-les-resumes/livres/livre-test-3/</loc></url>
+  <url><loc>https://omcresume.github.io/tous-les-resumes/livres/hello-4/</loc></url>
 </urlset>
