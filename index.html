@@ -513,21 +513,30 @@
   // Exemple : #livre-12
   // ================================================
 
-  function ouvrirLienLivre(id) {
-    const idNumerique = Number(id);
 
-    if (!Number.isSafeInteger(idNumerique) || idNumerique <= 0) {
-      return;
+function ouvrirLienLivre(id) {
+    const livre = livres.find(
+        l => String(l.id) === String(id)
+    );
+
+    if (!livre) {
+        console.error("Livre introuvable :", id);
+        return;
     }
 
-    const nouveauHash = "#livre-" + idNumerique;
+    const slug = String(livre.titre || "livre")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "livre";
 
-    if (window.location.hash === nouveauHash) {
-      afficherDetail(idNumerique);
-    } else {
-      window.location.hash = nouveauHash;
-    }
-  }
+    const url =
+        `/tous-les-resumes/livres/${slug}-${livre.id}/`;
+
+    window.location.href = url;
+}
+
 
   function naviguerDepuisAdresse() {
     const correspondance = window.location.hash.match(/^#livre-(\d+)$/);
