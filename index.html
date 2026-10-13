@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -7,6 +8,8 @@
   <meta name="robots" content="index, follow">
 
   <title>Tous les résumés — Bibliothèque de livres</title>
+
+  <link rel="canonical" href="https://omcresume.github.io/tous-les-resumes/">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -72,21 +75,35 @@
       gap: 25px;
     }
 
+    .book-link {
+      display: block;
+      min-width: 0;
+      color: inherit;
+      text-decoration: none;
+      border-radius: 12px;
+      outline-offset: 4px;
+    }
+
     .book {
+      height: 100%;
       background: white;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.06);
-      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .book:hover {
+    .book-link:hover .book {
       transform: translateY(-4px);
-      box-shadow: 0 8px 25px rgba(0,0,0,0.10);
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.10);
+    }
+
+    .book-link:focus-visible {
+      outline: 3px solid #756a60;
     }
 
     .cover {
+      display: block;
       width: 100%;
       height: 300px;
       object-fit: cover;
@@ -100,6 +117,7 @@
     .book h2 {
       margin: 0 0 8px;
       font-size: 21px;
+      overflow-wrap: anywhere;
     }
 
     .author {
@@ -120,6 +138,7 @@
       text-align: center;
       padding: 50px 20px;
       color: #756a60;
+      grid-column: 1 / -1;
     }
 
     .hidden {
@@ -165,7 +184,7 @@
       background: white;
       border-radius: 14px;
       padding: 35px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     }
 
     .detail-top {
@@ -278,7 +297,6 @@
 </header>
 
 <main id="libraryPage" class="container">
-
   <div class="search">
     <input
       type="text"
@@ -293,21 +311,14 @@
   </div>
 
   <div id="books" class="books"></div>
-
 </main>
 
 <main id="detailPage" class="container hidden">
-
-  <a
-    class="back-button"
-    href="./"
-    onclick="retourBibliotheque(); return false;"
-  >
-    ← Retour 
+  <a class="back-button" href="/tous-les-resumes/" id="backButton">
+    ← Retour à la bibliothèque
   </a>
 
   <div id="detailContent"></div>
-
 </main>
 
 <script>
@@ -326,9 +337,8 @@
     SUPABASE_KEY
   );
 
-  // ================================================
-  // VARIABLES
-  // ================================================
+  const BASE_URL =
+    "https://omcresume.github.io/tous-les-resumes";
 
   let livres = [];
   let demandeDetail = 0;
@@ -338,7 +348,7 @@
   const detailContent = document.getElementById("detailContent");
 
   // ================================================
-  // SÉCURISER L'AFFICHAGE DU TEXTE
+  // SÉCURISATION HTML
   // ================================================
 
   function echapperHTML(valeur) {
@@ -352,6 +362,25 @@
   }
 
   // ================================================
+  // URL DES FICHES INDIVIDUELLES
+  // Le slug doit correspondre à celui du générateur.
+  // ================================================
+
+  function creerSlug(titre) {
+    return String(titre || "livre")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "") || "livre";
+  }
+
+  function creerUrlFicheLivre(livre) {
+    const slug = creerSlug(livre.titre);
+    return `${BASE_URL}/livres/${slug}-${livre.id}/`;
+  }
+
+  // ================================================
   // CHARGEMENT DES LIVRES
   // ================================================
 
@@ -362,12 +391,12 @@
       .order("date_parution", { ascending: false });
 
     if (error) {
-      console.error(error);
+      console.error("Erreur Supabase :", error);
 
       document.getElementById("books").innerHTML = `
         <div class="empty">
           <h2>Impossible de charger les livres</h2>
-          <p>Vérifie la connexion à Supabase.</p>
+          <p>Vérifie la connexion à Supabase et la clé publique.</p>
         </div>
       `;
       return;
@@ -377,9 +406,6 @@
 
     remplirGenres();
     afficherLivres();
-
-    // Ouvre directement la fiche si l'adresse contient #livre-ID.
-    naviguerDepuisAdresse();
   }
 
   // ================================================
@@ -388,16 +414,11 @@
 
   function remplirGenres() {
     const select = document.getElementById("genre");
-
     const genreActuel = select.value;
 
     const genres = [
-      ...new Set(
-        livres
-          .map(livre => livre.genre)
-          .filter(Boolean)
-      )
-    ].sort();
+      ...new Set(livres.map(livre => livre.genre).filter(Boolean))
+    ].sort((a, b) => a.localeCompare(b, "fr"));
 
     select.innerHTML =
       '<option value="">Tous les genres</option>';
@@ -409,9 +430,7 @@
       select.appendChild(option);
     });
 
-    select.value = genres.includes(genreActuel)
-      ? genreActuel
-      : "";
+    select.value = genres.includes(genreActuel) ? genreActuel : "";
   }
 
   // ================================================
@@ -456,14 +475,17 @@
     }
 
     livresFiltres.forEach(livre => {
+      const lien = document.createElement("a");
+      lien.className = "book-link";
+      lien.href = creerUrlFicheLivre(livre);
+
+      lien.setAttribute(
+        "aria-label",
+        `Voir la fiche de ${livre.titre || "ce livre"}`
+      );
+
       const article = document.createElement("article");
       article.className = "book";
-      article.tabIndex = 0;
-      article.setAttribute("role", "link");
-      article.setAttribute(
-        "aria-label",
-        "Voir la fiche de " + String(livre.titre || "ce livre")
-      );
 
       const couverture = echapperHTML(
         livre.couverture ||
@@ -493,70 +515,13 @@
         </div>
       `;
 
-      article.addEventListener("click", () => {
-        ouvrirLienLivre(livre.id);
-      });
-
-      article.addEventListener("keydown", evenement => {
-        if (evenement.key === "Enter" || evenement.key === " ") {
-          evenement.preventDefault();
-          ouvrirLienLivre(livre.id);
-        }
-      });
-
-      container.appendChild(article);
+      lien.appendChild(article);
+      container.appendChild(lien);
     });
   }
 
   // ================================================
-  // LIENS DIRECTS DES LIVRES
-  // Exemple : #livre-12
-  // ================================================
-
-
-function ouvrirLienLivre(id) {
-    const livre = livres.find(
-        l => String(l.id) === String(id)
-    );
-
-    if (!livre) {
-        console.error("Livre introuvable :", id);
-        return;
-    }
-
-    const slug = String(livre.titre || "livre")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "") || "livre";
-
-    const url =
-        `/tous-les-resumes/livres/${slug}-${livre.id}/`;
-
-    window.location.href = url;
-}
-
-
-  function naviguerDepuisAdresse() {
-    const correspondance = window.location.hash.match(/^#livre-(\d+)$/);
-
-    if (correspondance) {
-      const id = Number(correspondance[1]);
-
-      if (Number.isSafeInteger(id)) {
-        afficherDetail(id);
-        return;
-      }
-    }
-
-    afficherBibliotheque();
-  }
-
-  window.addEventListener("hashchange", naviguerDepuisAdresse);
-
-  // ================================================
-  // AFFICHER LE DÉTAIL D'UN LIVRE
+  // DÉTAIL D'UN LIVRE
   // ================================================
 
   async function afficherDetail(id) {
@@ -565,16 +530,15 @@ function ouvrirLienLivre(id) {
     );
 
     if (!livre) {
-      afficherBibliotheque();
-
       detailContent.innerHTML = `
         <div class="empty">
           <h2>Livre introuvable</h2>
           <p>Ce livre n'existe pas ou n'est plus disponible.</p>
         </div>
       `;
-      detailPage.classList.remove("hidden");
+
       libraryPage.classList.add("hidden");
+      detailPage.classList.remove("hidden");
       return;
     }
 
@@ -583,9 +547,8 @@ function ouvrirLienLivre(id) {
     libraryPage.classList.add("hidden");
     detailPage.classList.remove("hidden");
 
-    detailContent.innerHTML = `
-      <div class="empty">Chargement de la fiche...</div>
-    `;
+    detailContent.innerHTML =
+      '<div class="empty">Chargement de la fiche...</div>';
 
     const { data: personnages, error } = await supabaseClient
       .from("personnages")
@@ -593,13 +556,12 @@ function ouvrirLienLivre(id) {
       .eq("livre_id", livre.id)
       .order("id");
 
-    // Évite qu'une ancienne requête remplace une fiche plus récente.
     if (numeroDemande !== demandeDetail) {
       return;
     }
 
     if (error) {
-      console.error(error);
+      console.error("Erreur personnages :", error);
 
       detailContent.innerHTML = `
         <div class="empty">
@@ -624,8 +586,6 @@ function ouvrirLienLivre(id) {
             </div>
           `).join("")
         : "<p>Aucun personnage renseigné pour le moment.</p>";
-
-    const urlFiche = window.location.href;
 
     detailContent.innerHTML = `
       <article class="detail">
@@ -695,14 +655,11 @@ function ouvrirLienLivre(id) {
           statut.textContent = "Lien copié ! Tu peux maintenant le partager.";
         } catch (erreur) {
           statut.textContent =
-            "Copie l'adresse affichée dans la barre de ton navigateur pour partager cette fiche.";
+            "Copie l'adresse affichée dans la barre du navigateur pour partager cette fiche.";
         }
       });
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
-    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // ================================================
@@ -711,30 +668,16 @@ function ouvrirLienLivre(id) {
 
   function afficherBibliotheque() {
     demandeDetail++;
-
     detailPage.classList.add("hidden");
     libraryPage.classList.remove("hidden");
+  }
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth"
+  document
+    .getElementById("backButton")
+    .addEventListener("click", evenement => {
+      evenement.preventDefault();
+      window.location.href = `${BASE_URL}/`;
     });
-  }
-
-  function retourBibliotheque() {
-    if (window.location.hash) {
-      // Supprime le fragment sans provoquer une navigation en double.
-      history.pushState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-    }
-
-    afficherBibliotheque();
-  }
-
-  window.addEventListener("popstate", naviguerDepuisAdresse);
 
   // ================================================
   // DATES
